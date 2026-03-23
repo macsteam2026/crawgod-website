@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRAWGOD — AI Meme Launcher on Base</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #030712; color: #e2e8f0; font-family: 'Courier New', monospace; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(234,179,8,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(234,179,8,0.04) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid rgba(234,179,8,0.2); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; background: rgba(3,7,18,0.85); }
+  .logo { font-size: 26px; font-weight: 900; background: linear-gradient(135deg, #eab308, #f97316, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 3px; }
+  .nav-right { display: flex; gap: 12px; align-items: center; }
+  .nav-tag { background: rgba(234,179,8,0.1); border: 1px solid rgba(234,179,8,0.3); color: #ca8a04; padding: 6px 14px; border-radius: 20px; font-size: 11px; letter-spacing: 1px; }
+  .nav-btn { background: linear-gradient(135deg, #eab308, #f97316); border: none; color: #000; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+  .hero { text-align: center; padding: 80px 20px 50px; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.25); color: #ca8a04; padding: 8px 20px; border-radius: 30px; font-size: 12px; letter-spacing: 2px; margin-bottom: 28px; }
+  .hero-badge .dot-live { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+  .hero h1 { font-size: 62px; font-weight: 900; line-height: 1.1; margin-bottom: 20px; font-family: -apple-system, sans-serif; }
+  .hero h1 .craw { background: linear-gradient(135deg, #eab308, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero h1 .god { background: linear-gradient(135deg, #ef4444, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 18px; color: #94a3b8; max-width: 580px; margin: 0 auto 40px; line-height: 1.7; font-family: -apple-system, sans-serif; }
+  .stats-bar { max-width: 900px; margin: 0 auto 50px; padding: 0 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat-card { background: rgba(15,23,42,0.8); border: 1px solid rgba(234,179,8,0.15); border-radius: 12px; padding: 20px; text-align: center; }
+  .stat-card .big { font-size: 26px; font-weight: 900; font-family: -apple-system, sans-serif; background: linear-gradient(135deg, #eab308, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-card .label { font-size: 10px; color: #64748b; margin-top: 6px; letter-spacing: 1px; }
+  .terminal-container { max-width: 900px; margin: 0 auto 50px; padding: 0 20px; }
+  .terminal { background: rgba(15,23,42,0.95); border: 1px solid rgba(234,179,8,0.25); border-radius: 16px; overflow: hidden; box-shadow: 0 0 60px rgba(234,179,8,0.08); }
+  .terminal-header { display: flex; align-items: center; gap: 8px; padding: 14px 20px; background: rgba(234,179,8,0.04); border-bottom: 1px solid rgba(234,179,8,0.15); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-red { background: #ef4444; } .dot-yellow { background: #eab308; } .dot-green { background: #10b981; }
+  .terminal-title { margin-left: 10px; font-size: 12px; color: #64748b; letter-spacing: 1px; }
+  .terminal-body { padding: 28px; min-height: 380px; max-height: 550px; overflow-y: auto; }
+  .log-line { display: flex; gap: 12px; margin-bottom: 10px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: all 0.35s ease; align-items: flex-start; }
+  .log-line.visible { opacity: 1; transform: translateY(0); }
+  .log-time { color: #475569; min-width: 80px; }
+  .log-type { min-width: 70px; }
+  .log-type.sys { color: #eab308; } .log-type.ai { color: #f97316; } .log-type.data { color: #06b6d4; } .log-type.ok { color: #10b981; } .log-type.warn { color: #f59e0b; }
+  .log-msg { color: #cbd5e1; flex: 1; line-height: 1.6; }
+  .log-msg .h { color: #f1f5f9; font-weight: 600; } .log-msg .v { color: #06b6d4; } .log-msg .n { color: #eab308; font-weight: 700; } .log-msg .g { color: #10b981; }
+  .cursor { display: inline-block; width: 8px; height: 13px; background: #eab308; animation: blink 1s infinite; vertical-align: middle; margin-left: 4px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .token-card { margin-top: 24px; background: rgba(234,179,8,0.04); border: 1px solid rgba(234,179,8,0.25); border-radius: 12px; padding: 24px; opacity: 0; transform: translateY(20px); transition: all 0.6s ease; font-family: -apple-system, sans-serif; }
+  .token-card.visible { opacity: 1; transform: translateY(0); }
+  .token-card-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .token-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #eab308, #f97316, #ef4444); display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+  .token-info h3 { font-size: 22px; font-weight: 700; color: #e2e8f0; }
+  .token-info p { font-size: 12px; color: #ca8a04; font-family: monospace; margin-top: 4px; }
+  .token-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-box { background: rgba(15,23,42,0.7); border: 1px solid rgba(234,179,8,0.15); border-radius: 8px; padding: 12px; text-align: center; }
+  .stat-label { font-size: 10px; color: #64748b; letter-spacing: 1px; margin-bottom: 5px; }
+  .stat-val { font-size: 16px; font-weight: 700; color: #e2e8f0; }
+  .token-desc { font-size: 13px; color: #94a3b8; line-height: 1.7; border-left: 3px solid #eab308; padding-left: 14px; margin-bottom: 20px; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .launch-btn { padding: 16px; background: linear-gradient(135deg, #eab308, #f97316); border: none; border-radius: 10px; color: #000; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; }
+  .launch-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(234,179,8,0.3); }
+  .launch-btn.launched { background: linear-gradient(135deg, #10b981, #06b6d4); color: #fff; }
+  .watch-btn { padding: 16px; background: transparent; border: 1px solid rgba(234,179,8,0.4); border-radius: 10px; color: #ca8a04; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; }
+  .watch-btn:hover { background: rgba(234,179,8,0.08); }
+  .feed-section { max-width: 900px; margin: 0 auto 60px; padding: 0 20px; }
+  .section-title { font-size: 12px; color: #ca8a04; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+  .feed-item { display: flex; gap: 14px; padding: 16px; background: rgba(15,23,42,0.6); border: 1px solid rgba(234,179,8,0.1); border-radius: 10px; margin-bottom: 10px; font-family: -apple-system, sans-serif; align-items: center; }
+  .feed-emoji { font-size: 28px; flex-shrink: 0; }
+  .feed-content h4 { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 3px; }
+  .feed-content p { font-size: 12px; color: #64748b; }
+  .feed-badge { margin-left: auto; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 4px 10px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+  .feed-badge.red { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+  footer { text-align: center; padding: 40px; border-top: 1px solid rgba(234,179,8,0.08); color: #334155; font-size: 11px; letter-spacing: 1px; line-height: 2; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">🦞 CRAWGOD</div>
+  <div class="nav-right">
+    <div class="nav-tag">BASE CHAIN · VIRTUALS</div>
+    <button class="nav-btn">LAUNCH APP</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge"><span class="dot-live"></span> AI ENGINE LIVE · SCANNING MARKETS</div>
+  <h1><span class="craw">CRAW</span><span class="god">GOD</span><br>Mints. Runs. Wins.</h1>
+  <p>The first AI that launches Meme coins on Base, runs the community, tweets every hour — completely autonomous. No humans required.</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-card"><div class="big">12</div><div class="label">AI TOKENS LAUNCHED</div></div>
+  <div class="stat-card"><div class="big">$0.6M</div><div class="label">TOTAL VOLUME</div></div>
+  <div class="stat-card"><div class="big">73%</div><div class="label">AI SURVIVAL RATE</div></div>
+  <div class="stat-card"><div class="big">3</div><div class="label">LIVE AGENTS</div></div>
+</div>
+
+<div class="terminal-container">
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+      <div class="terminal-title">CRAWGOD · AUTONOMOUS MEME ENGINE v0.1 · BASE CHAIN</div>
+    </div>
+    <div class="terminal-body" id="terminal"></div>
+  </div>
+</div>
+
+<div class="feed-section">
+  <div class="section-title">// RECENT AI LAUNCHES</div>
+  <div class="feed-item">
+    <div class="feed-emoji">🦞</div>
+    <div class="feed-content">
+      <h4>CRAWKONG · $CKON</h4>
+      <p>AI detected 380% social spike · Launched 1h ago · Holders: 1,847 · AI tweeting every 30min</p>
+    </div>
+    <div class="feed-badge">+243% 24h</div>
+  </div>
+  <div class="feed-item">
+    <div class="feed-emoji">🔥</div>
+    <div class="feed-content">
+      <h4>BLAZECRAW · $BLZC</h4>
+      <p>Fire narrative × crayfish meme · Base chain · AI community manager active · Holders: 923</p>
+    </div>
+    <div class="feed-badge">+87% 24h</div>
+  </div>
+  <div class="feed-item">
+    <div class="feed-emoji">🌊</div>
+    <div class="feed-content">
+      <h4>TIDECLAW · $TDCL</h4>
+      <p>Ocean × ETH narrative · AI ran Twitter 48h straight · Graduated to Uniswap</p>
+    </div>
+    <div class="feed-badge red">-12% 24h</div>
+  </div>
+</div>
+
+<footer>
+  🦞 CRAWGOD · AI-NATIVE MEME LAUNCHER · BASE CHAIN · POWERED BY VIRTUALS PROTOCOL<br>
+  Not financial advice · AI acts autonomously · DYOR · Participate at your own risk
+</footer>
+
+<script>
+const logs = [
+  {d:400,  t:'sys',  m:'🦞 Initializing <span class="h">CRAWGOD Engine</span> v0.1 · Base Chain'},
+  {d:1000, t:'sys',  m:'Connected to <span class="v">Virtuals Protocol</span> ✓ · Connected to <span class="v">Base RPC</span> ✓'},
+  {d:1700, t:'data', m:'Scanning CT (Crypto Twitter)... <span class="v">3.1M</span> posts ingested in last 6h'},
+  {d:2500, t:'data', m:'DexScreener: <span class="v">847</span> new tokens in 24h · Top narrative: <span class="n">AI × CRAYFISH × DEGEN</span>'},
+  {d:3200, t:'data', m:'On-chain: Smart wallet <span class="v">0xDegen...4f2a</span> bought $42K of meme tokens · win rate 68%'},
+  {d:4000, t:'ai',   m:'Running <span class="h">CRAWGOD-NLP v2</span> sentiment analysis...'},
+  {d:4800, t:'ai',   m:'Narrative cluster: <span class="n">[ CRAYFISH × INVINCIBLE × BASE_DEGEN ]</span> · score: <span class="v">91/100</span>'},
+  {d:5600, t:'ai',   m:'Social velocity: <span class="v">+340%</span> in 2h · FOMO index: <span class="n">HIGH</span> · Launch window: <span class="g">OPTIMAL</span>'},
+  {d:6400, t:'ai',   m:'Generating Meme identity from narrative DNA...'},
+  {d:7100, t:'ok',   m:'Token: <span class="n">CRAWGOD INVINCIBLE</span> · Ticker: <span class="n">$CRAWG</span> · Emoji: 🦞⚡'},
+  {d:7900, t:'ok',   m:'Supply: <span class="v">1,000,000,000 $CRAWG</span> · Fair Launch · 0% team · 0% VC · 100% community'},
+  {d:8700, t:'ok',   m:'AI Twitter agent: 🐦 <span class="v">first tweet drafted</span> · posting every 30min post-launch'},
+  {d:9400, t:'ok',   m:'Telegram community bot: <span class="v">ready</span> · auto-reply: ON · shill templates: 24 loaded'},
+  {d:10100,t:'sys',  m:'Liquidity curve: <span class="v">exponential bonding</span> · Auto-LP on Uniswap V3 at graduation'},
+  {d:10800,t:'ok',   m:'✓ Contract compiled · Gas: <span class="v">0.0009 ETH</span> · Estimated holders in 1h: <span class="n">200-500</span>'},
+  {d:11500,t:'sys',  m:'⏳ CRAWGOD ready to launch autonomously...<span class="cursor"></span>'},
+];
+
+const terminal = document.getElementById('terminal');
+
+function addLog(log) {
+  const now = new Date();
+  const time = now.toTimeString().slice(0,8);
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.innerHTML = `<span class="log-time">${time}</span><span class="log-type ${log.t}">[${log.t.toUpperCase()}]</span><span class="log-msg">${log.m}</span>`;
+  terminal.appendChild(div);
+  setTimeout(() => div.classList.add('visible'), 50);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+logs.forEach(log => setTimeout(() => addLog(log), log.d));
+
+setTimeout(() => {
+  const card = document.createElement('div');
+  card.className = 'token-card';
+  card.innerHTML = `
+    <div class="token-card-header">
+      <div class="token-avatar">🦞</div>
+      <div class="token-info">
+        <h3>CRAWGOD INVINCIBLE</h3>
+        <p>$CRAWG · Base Chain · Virtuals Agent · Fair Launch</p>
+      </div>
+    </div>
+    <div class="token-stats">
+      <div class="stat-box"><div class="stat-label">SUPPLY</div><div class="stat-val">1,000,000,000</div></div>
+      <div class="stat-box"><div class="stat-label">ALPHA SCORE</div><div class="stat-val">91 / 100</div></div>
+      <div class="stat-box"><div class="stat-label">AI TWEETS</div><div class="stat-val">Every 30m</div></div>
+      <div class="stat-box"><div class="stat-label">TEAM ALLOC</div><div class="stat-val">0%</div></div>
+    </div>
+    <div class="token-desc">
+      "Born from CT signals, chain data, and pure degen energy. CRAWGOD INVINCIBLE is the first AI-launched, AI-operated meme coin on Base. No humans. No rugs. Just the claw."
+    </div>
+    <div class="btn-row">
+      <button class="launch-btn" id="launchBtn" onclick="launch()">🦞 LAUNCH $CRAWG ON BASE</button>
+      <button class="watch-btn">👀 WATCH AI OPERATE</button>
+    </div>
+  `;
+  terminal.appendChild(card);
+  setTimeout(() => card.classList.add('visible'), 100);
+}, 12200);
+
+function launch() {
+  const btn = document.getElementById('launchBtn');
+  btn.textContent = '⏳ DEPLOYING ON BASE...';
+  btn.disabled = true;
+  setTimeout(() => {
+    addLog({t:'ok', m:'✓ <span class="n">$CRAWG</span> contract deployed · tx: <span class="v">0xCraw...g0d1</span>'});
+    addLog({t:'ok', m:'🐦 First AI tweet posted: <span class="v">"🦞 CRAWGOD is alive. The AI has launched. You were warned. $CRAWG"</span>'});
+    addLog({t:'ok', m:'Telegram bot active · Community: <span class="v">AUTO-MANAGED</span> · Shill: <span class="g">ACTIVE</span>'});
+    addLog({t:'ok', m:'Virtuals Agent registered · Autonomous identity: <span class="n">CRAWGOD_AI_001</span>'});
+    addLog({t:'sys', m:'🦞 <span class="h">CRAWGOD is now fully autonomous.</span> The claw never sleeps. <span class="cursor"></span>'});
+    btn.textContent = '✅ LAUNCHED — AI IS RUNNING';
+    btn.classList.add('launched');
+    btn.disabled = false;
+  }, 2200);
+}
+</script>
+</body>
+</html>
